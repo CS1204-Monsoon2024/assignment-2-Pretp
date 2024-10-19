@@ -2,13 +2,20 @@
 
 using namespace std;
 
+#include <iostream>
+
+using namespace std;
+
+struct HashNode {
+    int key;
+    bool isActive; // True if the slot is actively holding a value, false if empty or deleted
+};
+
 class HashTable {
 private:
-    int* table;
+    HashNode* table;
     int size;
     int capacity;
-    const int EMPTY = -1;
-    const int DELETED = -2;
 
     int hashFunction(int key) {
         return key % capacity;
@@ -23,8 +30,6 @@ private:
         }
         return true;
     }
-    
-    
 
     int nextPrime(int n) {
         while (!isPrime(n)) {
@@ -36,16 +41,16 @@ private:
     void resize() {
         int oldCapacity = capacity;
         capacity = nextPrime(2 * capacity);
-        int* oldTable = table;
-        table = new int[capacity];
+        HashNode* oldTable = table;
+        table = new HashNode[capacity];
         for (int i = 0; i < capacity; i++) {
-            table[i] = EMPTY;
+            table[i].isActive = false;
         }
         size = 0;
 
         for (int i = 0; i < oldCapacity; i++) {
-            if (oldTable[i] != EMPTY && oldTable[i] != DELETED) {
-                insert(oldTable[i]);
+            if (oldTable[i].isActive) {
+                insert(oldTable[i].key);
             }
         }
         delete[] oldTable;
@@ -53,9 +58,9 @@ private:
 
 public:
     HashTable(int initialCapacity) : capacity(initialCapacity), size(0) {
-        table = new int[capacity];
+        table = new HashNode[capacity];
         for (int i = 0; i < capacity; i++) {
-            table[i] = EMPTY;
+            table[i].isActive = false;
         }
     }
 
@@ -78,8 +83,9 @@ public:
 
         while (i < capacity) {
             int probeIndex = (index + i * i) % capacity;
-            if (table[probeIndex] == EMPTY || table[probeIndex] == DELETED) {
-                table[probeIndex] = key;
+            if (!table[probeIndex].isActive) {
+                table[probeIndex].key = key;
+                table[probeIndex].isActive = true;
                 size++;
                 return;
             }
@@ -96,7 +102,7 @@ public:
             return;
         }
 
-        table[index] = DELETED;
+        table[index].isActive = false;
         size--;
     }
 
@@ -106,10 +112,10 @@ public:
 
         while (i < capacity) {
             int probeIndex = (index + i * i) % capacity;
-            if (table[probeIndex] == EMPTY) {
+            if (!table[probeIndex].isActive) {
                 return -1;
             }
-            if (table[probeIndex] == key) {
+            if (table[probeIndex].key == key) {
                 return probeIndex;
             }
             i++;
@@ -120,12 +126,10 @@ public:
 
     void printTable() {
         for (int i = 0; i < capacity; i++) {
-            if (table[i] == EMPTY) {
-                cout << "- ";
-            } else if (table[i] == DELETED) {
+            if (!table[i].isActive) {
                 cout << "- ";
             } else {
-                cout << table[i] << " ";
+                cout << table[i].key << " ";
             }
         }
         cout << endl;
